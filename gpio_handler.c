@@ -31,9 +31,12 @@ volatile static uint32_t resumeThreadFlagID;
  */
 void gpio_i2c_pin_init (void)
 {
-    // TODO Enable GPIO peripheral
+    // Enable GPIO peripheral
+    CMU_ClockEnable(cmuClock_GPIO, true);
 
-    // TODO Take control of SDC and SCL output pins.
+    // Take control of SDC and SCL output pins.
+	GPIO_PinModeSet(MMA8653FC_SCL_PORT, MMA8653FC_SCL_PIN, gpioModeWiredAndPullUpFilter, 1);
+	GPIO_PinModeSet(MMA8653FC_SDA_PORT, MMA8653FC_SDA_PIN, gpioModeWiredAndPullUpFilter, 1);
 }
 
 /**
