@@ -72,9 +72,11 @@ static void mma_data_ready_loop (void *args)
     i2c_init();
     i2c_enable();
 
-    // TODO Read Who-am-I registry
-    
-    // TODO To configure sensor put sensor in standby mode.
+    res = read_whoami();
+    info1("Who-am-I %u %x", res, res);
+
+    // To configure sensor put sensor in standby mode.
+    set_sensor_standby();
     
     // TODO Configure sensor for xyz data acquisition.
     
@@ -82,7 +84,8 @@ static void mma_data_ready_loop (void *args)
     
     // TODO Configure GPIO for external interrupts and enable external interrupts.
     
-    // TODO Activate sensor.
+    // Activate sensor.
+    set_sensor_active();
     
     for (;;)
     {

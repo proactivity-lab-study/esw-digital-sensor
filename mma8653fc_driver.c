@@ -39,11 +39,26 @@ void sensor_reset (void)
 }
 
 /**
+ * @brief   Read who-am-i registry of MMA8653FC sensor.
+ *
+ * @return  value of MMA8653FC who-am-i registry.
+ */
+uint8_t read_whoami()
+{
+    return read_registry(MMA8653FC_REGADDR_WHO_AM_I);
+}
+
+/**
  * @brief   Sets sensor to active mode. 
  */
 void set_sensor_active ()
 {
-    // TODO Change mode to ACTIVE
+    uint8_t regVal;
+    
+    // Change mode to ACTIVE
+    regVal = read_registry(MMA8653FC_REGADDR_CTRL_REG1);
+    regVal = (regVal & ~MMA8653FC_CTRL_REG1_SAMODE_MASK) | (MMA8653FC_CTRL_REG1_SAMODE_ACTIVE << MMA8653FC_CTRL_REG1_SAMODE_SHIFT);
+    write_registry(MMA8653FC_REGADDR_CTRL_REG1, regVal);
 }
 
 /**
@@ -52,7 +67,12 @@ void set_sensor_active ()
  */
 void set_sensor_standby ()
 {
-    // TODO Change mode to STANDBY
+    uint8_t regVal;
+    
+    // Change mode to STANDBY
+    regVal = read_registry(MMA8653FC_REGADDR_CTRL_REG1);
+    regVal = (regVal & ~MMA8653FC_CTRL_REG1_SAMODE_MASK) | (MMA8653FC_CTRL_REG1_SAMODE_STANDBY << MMA8653FC_CTRL_REG1_SAMODE_SHIFT);
+    write_registry(MMA8653FC_REGADDR_CTRL_REG1, regVal);
 }
 
 /**
@@ -124,11 +144,29 @@ xyz_rawdata_t get_xyz_data()
  */
 static uint8_t read_registry(uint8_t regAddr)
 {
-    uint8_t reg;
-    // TODO Configure I2C_TransferSeq_TypeDef
+    #define READREG_TXBUF_LEN     1
+    #define READREG_RXBUF_LEN     1
     
-    // TODO Write value to MMA8653FC registry
-    return reg;
+    static I2C_TransferSeq_TypeDef readReg, *retSeq;
+    static uint8_t txBuf[READREG_TXBUF_LEN], rxBuf[READREG_RXBUF_LEN];
+
+    readReg.addr = MMA8653FC_SLAVE_ADDRESS_READ;
+        
+    txBuf[0] = regAddr;
+    readReg.buf[0].data = txBuf;
+    readReg.buf[0].len = READREG_TXBUF_LEN;
+    
+    rxBuf[0] = 0;
+    readReg.buf[1].data = rxBuf;
+    readReg.buf[1].len = READREG_RXBUF_LEN;
+
+    readReg.flags = I2C_FLAG_WRITE_READ;
+    
+    retSeq = i2c_transaction(&readReg);
+    
+    debug1("RReg 0x%02x, val 0x%02x", retSeq->buf[0].data[0], retSeq->buf[1].data[0]);
+    
+    return retSeq->buf[1].data[0];
 }
 
 /**
