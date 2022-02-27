@@ -129,8 +129,24 @@ int8_t configure_interrupt (uint8_t polarity, uint8_t pinmode, uint8_t interrupt
  */
 xyz_rawdata_t get_xyz_data()
 {
+    uint8_t reg_val_msb, reg_val_lsb;
     xyz_rawdata_t data;
-    // TODO Read multiple registries for status and x, y, z raw data
+    
+    reg_val_msb = read_registry(MMA8653FC_REGADDR_STATUS);
+    data.status = reg_val_msb;
+    
+    // Shift result MSB and LSB bytes into 16-bit unsigned data type
+    reg_val_msb = read_registry(MMA8653FC_REGADDR_OUT_X_MSB);
+    reg_val_lsb = read_registry(MMA8653FC_REGADDR_OUT_X_LSB);
+    data.out_x = reg_val_msb << 8 | (0x0000 | reg_val_lsb);
+    
+    reg_val_msb = read_registry(MMA8653FC_REGADDR_OUT_Y_MSB);
+    reg_val_lsb = read_registry(MMA8653FC_REGADDR_OUT_Y_LSB);
+    data.out_y = reg_val_msb << 8 | (0x0000 | reg_val_lsb);
+    
+    reg_val_msb = read_registry(MMA8653FC_REGADDR_OUT_Z_MSB);
+    reg_val_lsb = read_registry(MMA8653FC_REGADDR_OUT_Z_LSB);
+    data.out_z = reg_val_msb << 8 | (0x0000 | reg_val_lsb);
     
     return data;
 }
@@ -179,9 +195,28 @@ static uint8_t read_registry(uint8_t regAddr)
  */
 static void write_registry(uint8_t regAddr, uint8_t regVal)
 {
-    // TODO Configure I2C_TransferSeq_TypeDef
+    #define WRITEREG_TXBUF_LEN     2
+    #define WRITEREG_RXBUF_LEN     1
     
-    // TODO Write value to MMA8653FC registry
+    static I2C_TransferSeq_TypeDef writeReg, *retSeq;
+    static uint8_t txBuf[WRITEREG_TXBUF_LEN], rxBuf[WRITEREG_RXBUF_LEN];
+
+    writeReg.addr = MMA8653FC_SLAVE_ADDRESS_WRITE;
+        
+    txBuf[0] = regAddr;
+    txBuf[1] = regVal;
+    writeReg.buf[0].data = txBuf;
+    writeReg.buf[0].len = WRITEREG_TXBUF_LEN;
+    
+    rxBuf[0] = 0;
+    writeReg.buf[1].data = rxBuf;
+    writeReg.buf[1].len = WRITEREG_RXBUF_LEN;
+
+    writeReg.flags = I2C_FLAG_WRITE_WRITE;
+    
+    retSeq = i2c_transaction(&writeReg);
+    
+    debug1("WReg 0x%02x, val 0x%02x", retSeq->buf[0].data[0], retSeq->buf[0].data[1]);
     
     return ;
 }
