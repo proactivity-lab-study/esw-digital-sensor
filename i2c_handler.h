@@ -12,6 +12,9 @@
 
 #include "em_i2c.h"
 
+#define MMA8653FC_SCL_LOC   I2C_ROUTELOC0_SCLLOC_LOC1 
+#define MMA8653FC_SDA_LOC   3
+
 // Public functions
 void i2c_init(void);
 void i2c_enable(void);

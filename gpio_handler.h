@@ -15,6 +15,11 @@
 
 #define GPIO_IF_EXTI_NUM 0  // TODO Replace with actual IF number
 
+#define MMA8653FC_SDA_PORT      gpioPortA
+#define MMA8653FC_SCL_PORT      gpioPortA
+#define MMA8653FC_SDA_PIN       3
+#define MMA8653FC_SCL_PIN       2
+
 // Public functions
 void gpio_i2c_pin_init (void);
 void gpio_external_interrupt_init(void);

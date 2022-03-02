@@ -84,7 +84,8 @@ static void hb_loop (void *args)
  */
 static void mma_data_ready_loop (void *args)
 {
-    // TODO Initialize and enable I2C.
+    // Initialize and enable I2C.
+    i2c_init();
 
     // TODO Read Who-am-I registry
     
