@@ -84,10 +84,14 @@ static void hb_loop (void *args)
  */
 static void mma_data_ready_loop (void *args)
 {
+    uint8_t whoami;
     // Initialize and enable I2C.
     i2c_init();
+    i2c_enable();
 
-    // TODO Read Who-am-I registry
+    // Read Who-am-I registry
+    whoami = read_whoami();
+    info1("WHO AM I - %u", whoami);
     
     // TODO To configure sensor put sensor in standby mode.
     

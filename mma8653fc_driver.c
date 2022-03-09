@@ -43,7 +43,12 @@ void sensor_reset (void)
  */
 void set_sensor_active ()
 {
-    // TODO Change mode to ACTIVE
+    uint8_t reg_val;
+    reg_val = read_registry(MMA8653FC_REGADDR_CTRL_REG1);
+    reg_val = (reg_val & ~MMA8653FC_CTRL_REG1_SAMODE_MASK) | (MMA8653FC_CTRL_REG1_SAMODE_ACTIVE << MMA8653FC_CTRL_REG1_SAMODE_SHIFT);
+    
+    // Change mode to ACTIVE
+    write_registry(MMA8653FC_REGADDR_CTRL_REG1, reg_val);
 }
 
 /**
@@ -52,8 +57,20 @@ void set_sensor_active ()
  */
 void set_sensor_standby ()
 {
-    // TODO Change mode to STANDBY
+    // Change mode to STANDBY
+    uint8_t reg_val;
+    reg_val = read_registry(MMA8653FC_REGADDR_CTRL_REG1);
+    reg_val = (reg_val & ~MMA8653FC_CTRL_REG1_SAMODE_MASK) | (MMA8653FC_CTRL_REG1_SAMODE_STANDBY << MMA8653FC_CTRL_REG1_SAMODE_SHIFT);
+    
+    // Change mode to ACTIVE
+    write_registry(MMA8653FC_REGADDR_CTRL_REG1, reg_val);
 }
+
+uint8_t read_whoami()
+{
+    return read_registry(MMA8653FC_REGADDR_WHO_AM_I);
+}
+
 
 /**
  * @brief   Configures MMA8653FC sensor to start collecting xyz acceleration data.
@@ -125,9 +142,24 @@ xyz_rawdata_t get_xyz_data()
 static uint8_t read_registry(uint8_t regAddr)
 {
     uint8_t reg;
-    // TODO Configure I2C_TransferSeq_TypeDef
+    I2C_TransferSeq_TypeDef *ret, seq;
+    static uint8_t tx_buf[1], rx_buf[1];
     
-    // TODO Write value to MMA8653FC registry
+    // Configure I2C_TransferSeq_TypeDef
+    seq.addr = MMA8653FC_SLAVE_ADDRESS_READ;
+    tx_buf[0] = regAddr;
+    seq.buf[0].data = tx_buf;
+    seq.buf[0].len = 1;
+    
+    rx_buf[0] = 0;
+    seq.buf[1].data = rx_buf;
+    seq.buf[1].len = 1;
+    seq.flags = I2C_FLAG_WRITE_READ;    
+    
+    // Read a value from MMA8653FC registry
+    ret = i2c_transaction(&seq);
+    reg = ret->buf[1].data[0];
+    
     return reg;
 }
 

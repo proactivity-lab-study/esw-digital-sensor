@@ -19,6 +19,7 @@ typedef struct
 } xyz_rawdata_t;
 
 // Public functions
+uint8_t read_whoami();
 void sensor_reset (void);
 void set_sensor_active ();
 void set_sensor_standby ();
