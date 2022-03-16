@@ -127,7 +127,15 @@ int8_t configure_interrupt (uint8_t polarity, uint8_t pinmode, uint8_t interrupt
 xyz_rawdata_t get_xyz_data()
 {
     xyz_rawdata_t data;
-    // TODO Read multiple registries for status and x, y, z raw data
+    uint8_t rx_buf[7];
+    
+    // Read multiple registries for status and x, y, z raw data
+    read_multiple_registries(MMA8653FC_REGADDR_STATUS, rx_buf, 7);
+    
+    data.status = rx_buf[0];
+    data.out_x = (uint16_t)(rx_buf[1] << 8) | (0x0000 | rx_buf[2]);
+    data.out_y = (uint16_t)(rx_buf[3] << 8) | (0x0000 | rx_buf[4]);
+    data.out_z = (uint16_t)(rx_buf[5] << 8) | (0x0000 | rx_buf[6]);
     
     return data;
 }
@@ -173,9 +181,24 @@ static uint8_t read_registry(uint8_t regAddr)
  */
 static void write_registry(uint8_t regAddr, uint8_t regVal)
 {
-    // TODO Configure I2C_TransferSeq_TypeDef
+    uint8_t reg;
+    I2C_TransferSeq_TypeDef *ret, seq;
+    static uint8_t tx_buf[2], rx_buf[1];
     
-    // TODO Write value to MMA8653FC registry
+    // Configure I2C_TransferSeq_TypeDef
+    seq.addr = MMA8653FC_SLAVE_ADDRESS_WRITE;
+    tx_buf[0] = regAddr;
+    tx_buf[1] = regVal;
+    seq.buf[0].data = tx_buf;
+    seq.buf[0].len = 2;
+    
+    rx_buf[0] = 0;
+    seq.buf[1].data = rx_buf;
+    seq.buf[1].len = 1;
+    seq.flags = I2C_FLAG_WRITE_WRITE;    
+    
+    // Read a value from MMA8653FC registry
+    ret = i2c_transaction(&seq);
     
     return ;
 }

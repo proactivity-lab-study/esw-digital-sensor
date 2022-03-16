@@ -64,6 +64,7 @@
 #include "incbin.h"
 INCBIN(Header, "header.bin");
 
+#define DATA_READY_THREAD_FLAG      0x01
 static osThreadId_t dataReadyThreadId;
 
 float calc_signal_energy(float buf[], uint32_t num_elements);
@@ -84,7 +85,15 @@ static void hb_loop (void *args)
  */
 static void mma_data_ready_loop (void *args)
 {
-    uint8_t whoami;
+    #define DATA_STREAM_LENGTH  12
+    uint8_t whoami, scnt = 0;
+    xyz_rawdata_t data;
+    
+    uint16_t x_stream[DATA_STREAM_LENGTH];
+    uint16_t y_stream[DATA_STREAM_LENGTH];
+    uint16_t z_stream[DATA_STREAM_LENGTH];
+    float x_energy, y_energy, z_energy;
+    
     // Initialize and enable I2C.
     i2c_init();
     i2c_enable();
@@ -93,26 +102,62 @@ static void mma_data_ready_loop (void *args)
     whoami = read_whoami();
     info1("WHO AM I - %u", whoami);
     
-    // TODO To configure sensor put sensor in standby mode.
+    // To configure sensor put sensor in standby mode.
+    set_sensor_standby();
     
     // TODO Configure sensor for xyz data acquisition.
+    //configure_xyz_data( , , );
     
     // TODO Configure sensor to generate interrupt when new data becomes ready.
+    //configure_interrupt( , , , );
     
-    // TODO Configure GPIO for external interrupts and enable external interrupts.
+    // Configure GPIO for external interrupts and enable external interrupts.
+    gpio_external_interrupt_init();
+    gpio_external_interrupt_enable(dataReadyThreadId, DATA_READY_THREAD_FLAG);
     
-    // TODO Activate sensor.
+    // Activate sensor.
+    set_sensor_active();
     
     for (;;)
     {
-        // TODO Wait for data ready interrupt signal from MMA8653FC sensor
+        // Wait for data ready interrupt signal from MMA8653FC sensor
+        osThreadFlagsClear(DATA_READY_THREAD_FLAG);
+        osThreadFlagsWait(DATA_READY_THREAD_FLAG, osFlagsWaitAny, osWaitForever);
 
-        // TODO Get raw data
+        // Get raw data
+        data = get_xyz_data();
         
-        // TODO Convert to engineering value
-        
-        // TODO Signal analysis
-
+        // Status check
+        if (data.status == 15) // Data is ready and no overflow has occured
+        {
+            
+            if(scnt < DATA_STREAM_LENGTH)
+            {
+                // Convert to engineering value and store values in local buffer
+                x_stream[scnt] = convert_to_count(data.out_x);
+                y_stream[scnt] = convert_to_count(data.out_y);
+                z_stream[scnt] = convert_to_count(data.out_z);
+                scnt++;
+            }
+            else
+            {
+                // Signal analysis once the buffer is full
+                x_energy = calc_signal_energy(x_stream, scnt);
+                y_energy = calc_signal_energy(y_stream, scnt);
+                z_energy = calc_signal_energy(z_stream, scnt);
+                
+                info2("Signal energy");
+                info2("x %i,%i", (int32_t)x_energy, abs((int32_t)(x_energy*1000) - (((int32_t)x_energy) * 1000)));
+                info2("y %i,%i", (int32_t)y_energy, abs((int32_t)(y_energy*1000) - (((int32_t)y_energy) * 1000)));
+                info2("z %i,%i", (int32_t)z_energy, abs((int32_t)(z_energy*1000) - (((int32_t)z_energy) * 1000)));
+                scnt = 0;
+            }
+             
+        }
+        else
+        {
+            // Either overflow or data not ready
+        }
     }
 }
 
